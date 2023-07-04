@@ -1,0 +1,8 @@
+[Unit]
+Description=neos_gpt_server
+
+[Service]
+ExecStart=/usr/bin/python3 /home/ubuntu/repos/neos-gpt/main.py
+WorkingDirectory=/home/ubuntu/repos/neos-gpt/
+Environment=PYTHONUNBUFFERED=1
+User=ubuntu
