@@ -21,16 +21,14 @@ class APIClient:
 
         body = {
             "model": self.model,
-            "prompt": prompt,
+            "messages": [{"role": "user", "content": prompt}],
             "max_tokens": self.max_response_tokens,
             "temperature": self.temperature
         }
 
         response = self.post(body=body, headers=headers, path=self.path)
         response_json = json.loads(response)
-        if "choices" not in response_json:
-            raise ValueError(f"Error - choices not found in response_json. Response: {response_json}")
-        text = response_json["choices"][0]["text"].strip()
+        text = response_json["choices"][0]["message"]["content"].strip()
         return text
 
     def post(self, body: dict, headers: dict, path: str):
