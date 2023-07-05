@@ -21,12 +21,16 @@ class Server:
         caller = request.remote_addr
         current_time = time.time()
 
+        if caller not in self.config.whitelist and self.config.whitelist_enabled:
+            return jsonify({"error": "Your IP is not whitelisted"}), 403
+
         if caller in self.callers:
             time_diff = current_time - self.callers[caller]
             if time_diff < self.min_seconds_between_requests_per_user:
                 return jsonify({"error": "Too many requests"}), 429
 
-        self.callers[caller] = current_time
+        if self.min_seconds_between_requests_per_user > 0:
+            self.callers[caller] = current_time
 
         text = request.data.decode("utf-8")
         if len(text) > self.config.max_prompt_chars:
