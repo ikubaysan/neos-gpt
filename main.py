@@ -5,6 +5,6 @@ from modules.helpers.logging_helper import logger
 
 if __name__ == '__main__':
     config = Config('config.ini')
-    api_client = APIClient(base_url=config.base_url, path=config.path, api_key=config.api_key, model=config.model, max_response_tokens=config.max_response_tokens, temperature=config.temperature)
+    api_client = APIClient(base_url=config.base_url, path=config.path, api_key=config.api_key, model=config.model, max_response_tokens=config.max_response_tokens, temperature=config.temperature, prompt_history_length=config.prompt_history_length, system_message=config.system_message)
     server = Server(api_client=api_client, config=config)
     server.run()

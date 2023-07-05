@@ -2,6 +2,7 @@
 Server to facilitate consumption of the OpenAI API from NeosVR, without exposing API keys in Logix.
 
 ## Features:
+* Conversation context
 * Rate limiting
 * Max token limit
 * Responses returned as plain text for easy consumption in Logix

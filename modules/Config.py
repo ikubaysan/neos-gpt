@@ -17,6 +17,8 @@ class Config:
         self.max_response_tokens = int(self.config['api_client']['max_response_tokens'])
         self.temperature = float(self.config['api_client']['temperature'])
         self.max_prompt_chars = int(self.config['api_client']['max_prompt_chars'])
+        self.prompt_history_length = int(self.config['api_client']['prompt_history_length'])
+        self.system_message = self.config['api_client']['system_message']
 
         self.whitelist_enabled = self.config['server']['whitelist_enabled'].lower() == 'true'
         self.whitelist = [item.strip() for item in self.config['server']['whitelist'].split(',') if self.whitelist_enabled]
