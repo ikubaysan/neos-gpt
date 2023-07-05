@@ -35,3 +35,8 @@ Copy this URI and paste it into Neos, and the public folder will spawn.
 The client item is in the folder, named `NeosGPTClient`. 
 2. Spawn the item and navigate to the root of it with your Inspector tool.
 3. You will see 2 `DynamicValueVariable<string>` components with VariableNames `Settings/URL` and `and Settings/ClientUserID`. Modify those components' values to match your server's URL and your Neos UserID.
+
+Now your client has been configured. It will only work when you are in a session, and connect to your server, using your OpenAI API key. When other users send prompts, the requests will be sent to your server on your behalf. There is no need for other users to connect to your server.
+
+<img src="resources/readme/images/inspector.jpg"/>
+<img src="resources/readme/images/client.jpg"/>
