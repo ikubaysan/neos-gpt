@@ -7,7 +7,7 @@ Server to facilitate consumption of the OpenAI API from NeosVR, without exposing
 * Responses returned as plain text for easy consumption in Logix
 * IP whitelist
 
-## To use:
+## Server Setup:
 1. Install Python 3
 2. Install the requirements with `pip install -r requirements.txt`
 3. Make a copy of `config_example.ini` and rename it to `config.ini`
@@ -28,5 +28,10 @@ Then copy the service file to `/etc/systemd/system/` and run:
 * `sudo systemctl start neos_gpt_server.service` to start the service
 * `sudo systemctl enable neos_gpt_server.service` to enable the service to start on boot (optional)
 
-## To use in Neos:
-TODO: link the client item, document usage, and take screenshots.
+## Client Setup in NeosVR:
+1. This public folder contains the client:
+`neosrec:///U-DingoYabuki/R-9793cb26-f9ac-4eea-b52d-1bafdff8e502`
+Copy this URI and paste it into Neos, and the public folder will spawn. 
+The client item is in the folder, named `NeosGPTClient`. 
+2. Spawn the item and navigate to the root of it with your Inspector tool.
+3. You will see 2 `DynamicValueVariable<string>` components with VariableNames `Settings/URL` and `and Settings/ClientUserID`. Modify those components' values to match your server's URL and your Neos UserID.
