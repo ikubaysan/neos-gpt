@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import time
+import re
 from modules.APIClient import APIClient
 from modules.Config import Config
 from modules.helpers.logging_helper import logger
@@ -15,9 +16,16 @@ class Server:
         self.app = Flask(__name__)
         self.app.route("/prompt", methods=["POST"])(self.handle_prompt)
 
+    def is_valid_guid(self, guid):
+        # Check length
+        if len(guid) > 30:
+            return False
+        # Check for invalid characters
+        if not re.match("^[a-zA-Z0-9]+$", guid):
+            return False
+        return True
+
     def handle_prompt(self):
-        # Neos does not support parsing JSON,
-        # so we return a string with exactly the text we want to display
         caller = request.remote_addr
         current_time = time.time()
 
@@ -29,6 +37,10 @@ class Server:
             if time_diff < self.min_seconds_between_requests_per_user:
                 return jsonify({"error": "Too many requests"}), 429
 
+        conversation_id = request.args.get("conversation_id")
+        if conversation_id is not None and not self.is_valid_guid(conversation_id):
+            return jsonify({"error": "Invalid conversation_id"}), 400
+
         if self.min_seconds_between_requests_per_user > 0:
             self.callers[caller] = current_time
 
@@ -39,7 +51,8 @@ class Server:
         logger.info(f"Received prompt: {text}")
 
         try:
-            response = self.api_client.send_prompt(prompt=text)
+            # Pass the conversation_id to the API client
+            response = self.api_client.send_prompt(prompt=text, conversation_id=conversation_id)
             logger.info(f"Got response: {response}")
         except Exception as e:
             logger.error(f"Error: {e}")
@@ -48,7 +61,6 @@ class Server:
         self.delete_old_callers()
 
         return response, 200
-
 
     def delete_old_callers(self):
         current_time = time.time()
@@ -60,4 +72,3 @@ class Server:
     def run(self):
         self.app.run(host=self.config.host, port=self.config.port)
         logger.info(f"Server started on {self.config.host}:{self.config.port}")
-
