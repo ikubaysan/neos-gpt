@@ -18,10 +18,10 @@ class Server:
 
     def is_valid_guid(self, guid):
         # Check length
-        if len(guid) > 30:
+        if len(guid) > 36:
             return False
         # Check for invalid characters
-        if not re.match("^[a-zA-Z0-9]+$", guid):
+        if not re.match("^[a-zA-Z0-9-]+$", guid):
             return False
         return True
 

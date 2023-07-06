@@ -14,8 +14,9 @@ class Config:
         self.path = self.config['api_client']['path']
         self.api_key = self.config['api_client']['api_key']
         self.model = self.config['api_client']['model']
+        self.max_conversation_tokens = int(self.config['api_client']['max_conversation_tokens'])
         self.max_response_tokens = int(self.config['api_client']['max_response_tokens'])
-        self.conversation_length = int(self.config['api_client']['conversation_length'])
+        self.max_dialogues_per_conversation = int(self.config['api_client']['max_dialogues_per_conversation'])
         self.conversation_prune_after_seconds = int(self.config['api_client']['conversation_prune_after_seconds'])
         self.temperature = float(self.config['api_client']['temperature'])
         self.max_prompt_chars = int(self.config['api_client']['max_prompt_chars'])

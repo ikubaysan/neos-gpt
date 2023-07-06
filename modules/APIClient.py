@@ -4,77 +4,77 @@ import time
 import tiktoken
 from modules.helpers.logging_helper import logger
 
+def get_num_tokens_from_string(string: str, encoding_name: str) -> int:
+    encoding = tiktoken.encoding_for_model(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
 class Dialogue:
     def __init__(self, prompt: str, response: str, model: str):
         self.prompt = prompt
         self.response = response
-        self.prompt_num_tokens = self.get_num_tokens_from_string(prompt, model)
-        self.response_num_tokens = self.get_num_tokens_from_string(response, model)
-
-    @staticmethod
-    def get_num_tokens_from_string(string: str, encoding_name: str) -> int:
-        encoding = tiktoken.encoding_for_model(encoding_name)
-        num_tokens = len(encoding.encode(string))
-        return num_tokens
+        self.prompt_num_tokens = get_num_tokens_from_string(prompt, model)
+        self.response_num_tokens = get_num_tokens_from_string(response, model)
+        self.total_num_tokens = self.prompt_num_tokens + self.response_num_tokens
 
 
 class Conversation:
-    # A circular buffer of prompts and their responses.
-    # [0] would be the oldest prompt, [max_length - 1] would be the newest prompt
-    def __init__(self, max_length: int):
+    def __init__(self, max_length: int, model: str):
         self.max_length = max_length
         self.update_epoch = time.time()
-        self.prompts = []
-        self.responses = []
+        self.dialogues = []
+        self.model = model
 
     def add(self, prompt: str, response: str):
-        if len(self.prompts) == self.max_length:
-            self.prompts.pop(0)
-            self.responses.pop(0)
-        self.prompts.append(prompt)
-        self.responses.append(response)
+        dialogue = Dialogue(prompt, response, self.model)
+        if len(self.dialogues) == self.max_length:
+            self.dialogues.pop(0)
+        self.dialogues.append(dialogue)
         self.update_epoch = time.time()
 
     def get_messages_for_api(self):
-        # Return all prompts and responses in a format that can be sent to the API
         messages = []
-        for i in range(len(self.prompts)):
-            messages.append({"role": "user", "content": self.prompts[i]})
-            messages.append({"role": "assistant", "content": self.responses[i]})
+        for dialogue in self.dialogues:
+            messages.append({"role": "user", "content": dialogue.prompt})
+            messages.append({"role": "assistant", "content": dialogue.response})
         return messages
 
+    def get_total_tokens(self):
+        return sum([dialogue.total_num_tokens for dialogue in self.dialogues])
+
+    def trim(self, prompt_tokens: int, token_limit: int):
+        # Remove dialogues until the total number of the prompt and saved dialogues is less than the token limit
+        while len(self.dialogues) > 0 and self.get_total_tokens() + prompt_tokens >= token_limit:
+            self.dialogues.pop(0)
+
+
 class ConversationContainer:
-    def __init__(self, conversation_prune_after_seconds: int, conversation_length: int):
+    def __init__(self, conversation_prune_after_seconds: int, max_dialogues_per_conversation: int, model: str):
         self.conversation_prune_after_seconds = conversation_prune_after_seconds
-        self.conversation_length = conversation_length
+        self.max_dialogues_per_conversation = max_dialogues_per_conversation
         self.prompt_histories = {}
+        self.model = model
 
     def get_conversation(self, conversation_id: str) -> Conversation:
         if conversation_id not in self.prompt_histories:
-            self.prompt_histories[conversation_id] = Conversation(max_length=self.conversation_length)
+            self.prompt_histories[conversation_id] = Conversation(max_length=self.max_dialogues_per_conversation, model=self.model)
         return self.prompt_histories[conversation_id]
 
-    def prune(self):
-        # Remove prompt histories that have not been used in a while
-        current_time = time.time()
-        for conversation_id in list(self.prompt_histories):
-            conversation = self.prompt_histories[conversation_id]
-            if current_time - conversation.creation_epoch > self.conversation_prune_after_seconds:
-                del self.prompt_histories[conversation_id]
-
 class APIClient:
-    def __init__(self, base_url: str, path: str, api_key: str, model: str, max_response_tokens: int,
-                 conversation_length: int, conversation_prune_after_seconds: int, temperature: float,
-                 system_message: str = None):
+    def __init__(self, base_url: str, path: str, api_key: str, model: str, max_conversation_tokens: int,
+                 max_response_tokens: int, max_dialogues_per_conversation: int, conversation_prune_after_seconds: int,
+                 temperature: float, system_message: str = None):
         self.base_url = base_url
         self.path = path
         self.api_key = api_key
         self.model = model
+        self.max_conversation_tokens = max_conversation_tokens
         self.max_response_tokens = max_response_tokens
         self.temperature = temperature
         self.system_message = system_message
         self.prompt_histories = ConversationContainer(conversation_prune_after_seconds=conversation_prune_after_seconds,
-                                                      conversation_length=conversation_length)
+                                                      max_dialogues_per_conversation=max_dialogues_per_conversation,
+                                                      model=model)
 
     def send_prompt(self, prompt: str, conversation_id: str = None) -> str:
         headers = {
@@ -87,11 +87,13 @@ class APIClient:
         if self.system_message is not None:
             messages.append({"role": "system", "content": self.system_message})
 
+        prompt_tokens = get_num_tokens_from_string(prompt, self.model)
         if conversation_id is None:
             # No conversation ID, so there is no context to add to the prompt
             messages.append({"role": "user", "content": prompt})
         else:
             conversation = self.prompt_histories.get_conversation(conversation_id=conversation_id)
+            conversation.trim(prompt_tokens=prompt_tokens, token_limit=self.max_conversation_tokens)
             previous_messages = conversation.get_messages_for_api()
             # Add the previous prompts and responses to the message list
             for message in previous_messages:
