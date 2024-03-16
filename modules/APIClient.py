@@ -76,7 +76,7 @@ class APIClient:
                                                       max_dialogues_per_conversation=max_dialogues_per_conversation,
                                                       model=model)
 
-    def send_prompt(self, prompt: str, conversation_id: str = None) -> str:
+    def send_prompt(self, prompt: str, conversation_id: str = None, model: str = None) -> str:
         headers = {
             'Authorization': 'Bearer ' + self.api_key,
             'Content-Type': 'application/json',
@@ -101,8 +101,13 @@ class APIClient:
             # Finally, add the new prompt
             messages.append({"role": "user", "content": prompt})
 
+        if model is not None:
+            logger.info(f"Using specified model: {model}")
+        else:
+            logger.info(f"Using default model: {self.model}")
+
         body = {
-            "model": self.model,
+            "model": model if model is not None else self.model,
             "messages": messages,
             "max_tokens": self.max_response_tokens,
             "temperature": self.temperature

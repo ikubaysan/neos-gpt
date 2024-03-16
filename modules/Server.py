@@ -41,6 +41,11 @@ class Server:
         if conversation_id is not None and not self.is_valid_guid(conversation_id):
             return jsonify({"error": "Invalid conversation_id"}), 400
 
+        model = request.args.get("model")
+        # TODO: validate this better
+        if model is not None and len(model) < 1:
+            return jsonify({"error": "Invalid model"}), 400
+
         if self.min_seconds_between_requests_per_user > 0:
             self.callers[caller] = current_time
 
@@ -52,7 +57,9 @@ class Server:
 
         try:
             # Pass the conversation_id to the API client
-            response = self.api_client.send_prompt(prompt=text, conversation_id=conversation_id)
+            response = self.api_client.send_prompt(prompt=text,
+                                                   conversation_id=conversation_id,
+                                                   model=model)
             logger.info(f"Got response: {response}")
         except Exception as e:
             logger.error(f"Error: {e}")
