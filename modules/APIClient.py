@@ -79,7 +79,7 @@ class APIClient:
                                                       max_dialogues_per_conversation=max_dialogues_per_conversation,
                                                       model=model)
 
-    def send_prompt(self, prompt: str, conversation_id: str = None, model: str = None) -> str:
+    def send_prompt(self, prompt: str, image_url: str = None, conversation_id: str = None, model: str = None) -> str:
         headers = {
             'Authorization': 'Bearer ' + self.api_key,
             'Content-Type': 'application/json',
@@ -104,7 +104,11 @@ class APIClient:
                 messages.append(message)
 
         # Finally, add the new prompt
-        prompt_message = {"role": "user", "content": [{"type": "text", "text": prompt}]}
+        prompt_content_list = []
+        prompt_content_list.append({"type": "text", "text": prompt})
+        if image_url:
+            prompt_content_list.append({"type": "image_url", "image_url": {"url": image_url}})
+        prompt_message = {"role": "user", "content": prompt_content_list}
         messages.append(prompt_message)
 
         if model is not None:

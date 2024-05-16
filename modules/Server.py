@@ -55,10 +55,15 @@ class Server:
             text = text[:self.config.max_prompt_chars]
 
         logger.info(f"Received prompt: {text}")
+        image_url = request.args.get("image_url")
+
+        if image_url:
+            logger.info(f"An image_url was included: {image_url}")
 
         try:
             # Pass the conversation_id to the API client
             response = self.api_client.send_prompt(prompt=text,
+                                                   image_url=image_url,
                                                    conversation_id=conversation_id,
                                                    model=model)
             logger.info(f"Got response: {response}")
