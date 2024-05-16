@@ -2,6 +2,7 @@ import requests
 import json
 import time
 import tiktoken
+from typing import List
 from modules.helpers.logging_helper import logger
 
 def get_num_tokens_from_string(string: str, encoding_name: str) -> int:
@@ -10,11 +11,13 @@ def get_num_tokens_from_string(string: str, encoding_name: str) -> int:
     return num_tokens
 
 class Dialogue:
-    def __init__(self, prompt: str, response: str, model: str):
-        self.prompt = prompt
-        self.response = response
-        self.prompt_num_tokens = get_num_tokens_from_string(prompt, model)
-        self.response_num_tokens = get_num_tokens_from_string(response, model)
+    def __init__(self, prompt_message: dict, response_message: dict, model: str):
+        self.prompt_message = prompt_message
+        self.prompt_text = prompt_message["content"][0]["text"].strip()
+        self.response_message = response_message
+        self.response_text = response_message["content"].strip()
+        self.prompt_num_tokens = get_num_tokens_from_string(self.prompt_text, model)
+        self.response_num_tokens = get_num_tokens_from_string(self.response_text, model)
         self.total_num_tokens = self.prompt_num_tokens + self.response_num_tokens
 
 
@@ -22,11 +25,11 @@ class Conversation:
     def __init__(self, max_length: int, model: str):
         self.max_length = max_length
         self.update_epoch = time.time()
-        self.dialogues = []
+        self.dialogues: List[Dialogue] = []
         self.model = model
 
-    def add(self, prompt: str, response: str):
-        dialogue = Dialogue(prompt, response, self.model)
+    def add(self, prompt_message: dict, response_message: dict):
+        dialogue = Dialogue(prompt_message, response_message, self.model)
         if len(self.dialogues) == self.max_length:
             self.dialogues.pop(0)
         self.dialogues.append(dialogue)
@@ -35,8 +38,8 @@ class Conversation:
     def get_messages_for_api(self):
         messages = []
         for dialogue in self.dialogues:
-            messages.append({"role": "user", "content": dialogue.prompt})
-            messages.append({"role": "assistant", "content": dialogue.response})
+            messages.append(dialogue.prompt_message)
+            messages.append(dialogue.response_message)
         return messages
 
     def get_total_tokens(self):
@@ -85,12 +88,13 @@ class APIClient:
         messages = []
         conversation = None
         if self.system_message is not None:
-            messages.append({"role": "system", "content": self.system_message})
+            system_message_content = [{"type": "text", "text": self.system_message}]
+            messages.append({"role": "system", "content": system_message_content})
 
         prompt_tokens = get_num_tokens_from_string(prompt, self.model)
         if conversation_id is None:
             # No conversation ID, so there is no context to add to the prompt
-            messages.append({"role": "user", "content": prompt})
+            pass
         else:
             conversation = self.prompt_histories.get_conversation(conversation_id=conversation_id)
             conversation.trim(prompt_tokens=prompt_tokens, token_limit=self.max_conversation_tokens)
@@ -98,8 +102,10 @@ class APIClient:
             # Add the previous prompts and responses to the message list
             for message in previous_messages:
                 messages.append(message)
-            # Finally, add the new prompt
-            messages.append({"role": "user", "content": prompt})
+
+        # Finally, add the new prompt
+        prompt_message = {"role": "user", "content": [{"type": "text", "text": prompt}]}
+        messages.append(prompt_message)
 
         if model is not None:
             logger.info(f"Using specified model: {model}")
@@ -118,12 +124,13 @@ class APIClient:
         response = self.post(body=body, headers=headers, path=self.path)
         logger.info(f"Got response: {response}")
         response_json = json.loads(response)
-        text = response_json["choices"][0]["message"]["content"].strip()
+        response_message = response_json["choices"][0]["message"]
+        response_text = response_message["content"].strip()
 
         if conversation is not None:
-            conversation.add(prompt=prompt, response=text)
+            conversation.add(prompt_message=prompt_message, response_message=response_message)
 
-        return text
+        return response_text
 
     def post(self, body: dict, headers: dict, path: str):
         response = requests.post(self.base_url + path, headers=headers, data=json.dumps(body))

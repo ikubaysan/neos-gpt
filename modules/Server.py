@@ -4,6 +4,7 @@ import re
 from modules.APIClient import APIClient
 from modules.Config import Config
 from modules.helpers.logging_helper import logger
+import traceback
 
 class Server:
     def __init__(self, api_client: APIClient, config: Config):
@@ -62,7 +63,8 @@ class Server:
                                                    model=model)
             logger.info(f"Got response: {response}")
         except Exception as e:
-            logger.error(f"Error: {e}")
+            # log the traceback
+            logger.error(traceback.format_exc())
             return f"Could not process request to OpenAI API: {e}", 500
 
         self.delete_old_callers()
