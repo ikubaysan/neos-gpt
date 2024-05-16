@@ -59,6 +59,9 @@ class Server:
 
         if image_url:
             logger.info(f"An image_url was included: {image_url}")
+            # Replace all "|" with "/" in the image URL
+            image_url = image_url.replace("|", "/")
+            logger.info(f"Image URL after replacing | with /: {image_url}")
 
         try:
             # Pass the conversation_id to the API client

@@ -55,13 +55,14 @@ class ConversationContainer:
     def __init__(self, conversation_prune_after_seconds: int, max_dialogues_per_conversation: int, model: str):
         self.conversation_prune_after_seconds = conversation_prune_after_seconds
         self.max_dialogues_per_conversation = max_dialogues_per_conversation
-        self.prompt_histories = {}
+        self.conversations = {}
         self.model = model
 
     def get_conversation(self, conversation_id: str) -> Conversation:
-        if conversation_id not in self.prompt_histories:
-            self.prompt_histories[conversation_id] = Conversation(max_length=self.max_dialogues_per_conversation, model=self.model)
-        return self.prompt_histories[conversation_id]
+        if conversation_id not in self.conversations:
+            # Create a new conversation if it doesn't exist
+            self.conversations[conversation_id] = Conversation(max_length=self.max_dialogues_per_conversation, model=self.model)
+        return self.conversations[conversation_id]
 
 class APIClient:
     def __init__(self, base_url: str, path: str, api_key: str, model: str, max_conversation_tokens: int,
@@ -75,7 +76,7 @@ class APIClient:
         self.max_response_tokens = max_response_tokens
         self.temperature = temperature
         self.system_message = system_message
-        self.prompt_histories = ConversationContainer(conversation_prune_after_seconds=conversation_prune_after_seconds,
+        self.conversations = ConversationContainer(conversation_prune_after_seconds=conversation_prune_after_seconds,
                                                       max_dialogues_per_conversation=max_dialogues_per_conversation,
                                                       model=model)
 
@@ -96,7 +97,7 @@ class APIClient:
             # No conversation ID, so there is no context to add to the prompt
             pass
         else:
-            conversation = self.prompt_histories.get_conversation(conversation_id=conversation_id)
+            conversation = self.conversations.get_conversation(conversation_id=conversation_id)
             conversation.trim(prompt_tokens=prompt_tokens, token_limit=self.max_conversation_tokens)
             previous_messages = conversation.get_messages_for_api()
             # Add the previous prompts and responses to the message list
