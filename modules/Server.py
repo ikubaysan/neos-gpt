@@ -1,15 +1,15 @@
 from flask import Flask, request, jsonify
 import time
 import re
-from modules.APIClient import APIClient
+from modules.OpenAIAPIClient import OpenAIAPIClient
 from modules.Config import Config
 from modules.helpers.logging_helper import logger
 import traceback
 
 class Server:
-    def __init__(self, api_client: APIClient, config: Config):
+    def __init__(self, openai_api_client: OpenAIAPIClient, config: Config):
         self.config = config
-        self.api_client = api_client
+        self.openai_api_client = openai_api_client
         self.min_seconds_between_requests_per_user = config.min_seconds_between_requests_per_user
         self.callers = {}
 
@@ -58,6 +58,10 @@ class Server:
         image_url = request.args.get("image_url")
 
         if image_url:
+
+            if "{" in image_url or "}" in image_url:
+                return f"Invalid image_url: {image_url}", 400
+
             logger.info(f"An image_url was included: {image_url}")
             # Replace all "|" with "/" in the image URL
             image_url = image_url.replace("|", "/")
@@ -65,7 +69,7 @@ class Server:
 
         try:
             # Pass the conversation_id to the API client
-            response = self.api_client.send_prompt(prompt=text,
+            response = self.openai_api_client.send_prompt(prompt=text,
                                                    image_url=image_url,
                                                    conversation_id=conversation_id,
                                                    model=model)

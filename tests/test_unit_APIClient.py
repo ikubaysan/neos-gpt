@@ -1,4 +1,4 @@
-from modules.APIClient import APIClient, ConversationContainer, Conversation, Dialogue, get_num_tokens_from_string
+from modules.OpenAIAPIClient import APIClient, ConversationContainer, Conversation, Dialogue, get_num_tokens_from_string
 import os
 import pytest
 

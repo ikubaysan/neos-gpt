@@ -1,15 +1,17 @@
 from modules.Config import Config
-from modules.APIClient import APIClient
+from modules.OpenAIAPIClient import OpenAIAPIClient
+from modules.GoogleAIAPIClient import GoogleAIAPIClient
 from modules.Server import Server
 from modules.helpers.logging_helper import logger
 
 if __name__ == '__main__':
     config = Config('config.ini')
-    api_client = APIClient(base_url=config.base_url, path=config.path, api_key=config.api_key, model=config.model, 
-                           max_conversation_tokens=config.max_conversation_tokens,
-                           max_response_tokens=config.max_response_tokens,
-                           max_dialogues_per_conversation=config.max_dialogues_per_conversation,
-                           conversation_prune_after_seconds=config.conversation_prune_after_seconds,
-                           temperature=config.temperature, system_message=config.system_message)
-    server = Server(api_client=api_client, config=config)
+    openai_api_client = OpenAIAPIClient(base_url=config.openai_base_url, path=config.openai_path, api_key=config.openai_api_key, model=config.openai_model,
+                           max_conversation_tokens=config.openai_max_conversation_tokens,
+                           max_response_tokens=config.openai_max_response_tokens,
+                           max_dialogues_per_conversation=config.openai_max_dialogues_per_conversation,
+                           conversation_prune_after_seconds=config.openai_conversation_prune_after_seconds,
+                           temperature=config.openai_temperature, system_message=config.openai_system_message)
+    google_api_client = GoogleAIAPIClient(api_key=config.google_api_key, model_name=config.google_model)
+    server = Server(openai_api_client=openai_api_client, config=config)
     server.run()
