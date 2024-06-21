@@ -1,15 +1,28 @@
+import time
+from modules.Dialogue import OpenAIDialogue, GoogleAIDialogue
+from typing import List
+from abc import ABC, abstractmethod
 
 
+class Conversation(ABC):
+    @abstractmethod
+    def add(self, prompt_message, response_message):
+        pass
 
-class Conversation:
+    @abstractmethod
+    def get_messages_for_api(self):
+        pass
+
+
+class OpenAIConversation(Conversation):
     def __init__(self, max_length: int, model: str):
         self.max_length = max_length
         self.update_epoch = time.time()
-        self.dialogues: List[Dialogue] = []
+        self.dialogues: List[OpenAIDialogue] = []
         self.model = model
 
     def add(self, prompt_message: dict, response_message: dict):
-        dialogue = Dialogue(prompt_message, response_message, self.model)
+        dialogue = OpenAIDialogue(prompt_message, response_message, self.model)
         if len(self.dialogues) == self.max_length:
             self.dialogues.pop(0)
         self.dialogues.append(dialogue)
@@ -29,3 +42,28 @@ class Conversation:
         # Remove dialogues until the total number of the prompt and saved dialogues is less than the token limit
         while len(self.dialogues) > 0 and self.get_total_tokens() + prompt_tokens >= token_limit:
             self.dialogues.pop(0)
+
+
+class GoogleAIConversation(Conversation):
+    def __init__(self, max_length: int, model: str):
+        self.max_length = max_length
+        self.update_epoch = time.time()
+        self.dialogues: List[GoogleAIDialogue] = []
+        self.model = model
+
+    def add(self, prompt_contents: dict, response_text: str):
+        dialogue = GoogleAIDialogue(prompt_contents, response_text)
+        if len(self.dialogues) == self.max_length:
+            self.dialogues.pop(0)
+        self.dialogues.append(dialogue)
+        self.update_epoch = time.time()
+
+    def get_messages_for_api(self):
+        messages = []
+        for dialogue in self.dialogues:
+            messages.append(dialogue.prompt_contents)
+            messages.append({
+                "role": "model",
+                "parts": [dialogue.response_text]
+            })
+        return messages

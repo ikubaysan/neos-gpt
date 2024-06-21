@@ -14,7 +14,9 @@ class Config:
         self.openai_base_url = self.config['openai_api_client']['base_url']
         self.openai_path = self.config['openai_api_client']['path']
         self.openai_api_key = self.config['openai_api_client']['api_key']
-        self.openai_model = self.config['openai_api_client']['model']
+
+        self.openai_models = [item.strip() for item in self.config['openai_api_client']['models'].split(',')]
+
         self.openai_max_conversation_tokens = int(self.config['openai_api_client']['max_conversation_tokens'])
         self.openai_max_response_tokens = int(self.config['openai_api_client']['max_response_tokens'])
         self.openai_max_dialogues_per_conversation = int(self.config['openai_api_client']['max_dialogues_per_conversation'])
