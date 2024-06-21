@@ -115,7 +115,7 @@ class Server:
                 combined_response += f"Response from model '{model}':\n{responses[model]}"
             else:
                 #combined_response += f"Model: {model}\n{responses[model]}\n\n"
-                combined_response += f"Response from model '{model}':\n{responses[model]}\n\n"
+                combined_response += f"Response from model '{model}':\n{responses[model]}\n\n\n"
 
         return combined_response
 

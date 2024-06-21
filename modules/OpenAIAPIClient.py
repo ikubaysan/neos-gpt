@@ -65,7 +65,12 @@ class OpenAIAPIClient:
         response = self.post(body=body, headers=headers, path=self.path)
         logger.info(f"Got response: {response}")
         response_json = json.loads(response)
-        response_message = response_json["choices"][0]["message"]
+
+        try:
+            response_message = response_json["choices"][0]["message"]
+        except:
+            return response
+
         response_text = response_message["content"].strip()
 
         if conversation is not None:
