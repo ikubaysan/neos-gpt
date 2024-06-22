@@ -13,6 +13,29 @@ class GoogleAIAPIClient:
         self.api_key = api_key
         self.model_name = model_name
 
+        # See:
+        # https://stackoverflow.com/a/78078401/8151234
+        # https://ai.google.dev/gemini-api/docs/safety-settings
+        # These are the 4 safety categories, and default threshold is "BLOCK_MEDIUM_AND_ABOVE". Let's disable them.
+        self.safe = [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE",
+            }
+        ]
+
         self.conversations = GoogleConversationContainer(conversation_prune_after_seconds=conversation_prune_after_seconds,
                                                    max_dialogues_per_conversation=max_dialogues_per_conversation,
                                                    model=model_name)
@@ -54,7 +77,7 @@ class GoogleAIAPIClient:
                             'parts': outbound_parts}
         messages.append(new_user_message)
 
-        response = self.model.generate_content(messages)
+        response = self.model.generate_content(messages, safety_settings=self.safe)
 
         response_text = response.text
 
