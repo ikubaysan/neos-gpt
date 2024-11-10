@@ -103,4 +103,8 @@ if __name__ == "__main__":
     logger.info(f"Got response: {response}")
     response = claude_api_client.send_prompt(prompt="Now tell me the color of the thing the cat is lying on", conversation_id="test")
     logger.info(f"Got response: {response}")
+
+
+    response = claude_api_client.send_prompt(prompt="What were the last things we spoke about?", conversation_id="test2")
+    logger.info(f"Got response: {response}")
     pass
