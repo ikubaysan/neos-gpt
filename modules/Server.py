@@ -7,6 +7,7 @@ from modules.ClaudeAPIClient import ClaudeAPIClient
 from modules.Config import Config
 from modules.helpers.logging_helper import logger
 import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional
 
 class Server:
@@ -22,7 +23,7 @@ class Server:
 
         self.min_seconds_between_requests_per_user = config.min_seconds_between_requests_per_user
         self.callers = {}
-        self.valid_models = config.openai_models + [config.google_model]
+        self.valid_models = config.openai_models + [config.google_model] + [config.claude_model]
         logger.info(f"Valid models: {self.valid_models} ({len(self.valid_models)} total)")
 
         # Using Flask synchronously
@@ -59,7 +60,7 @@ class Server:
 
         for model in models:
             if model not in self.valid_models:
-                return jsonify({"error": f"Invalid model: {models}"}), 400
+                return jsonify({"error": f"Invalid model: {model} - Valid models are: {self.valid_models}"}), 400
 
         if self.min_seconds_between_requests_per_user > 0:
             self.callers[caller] = current_time
@@ -88,48 +89,48 @@ class Server:
 
         return response, 200
 
-
     def send_prompt(self, models: List[str], text: str, image_url: str, conversation_id: Optional[str]) -> str:
         logger.info(f"Sending prompt to {len(models)} models: {models}")
         responses = {}
-        for model in models:
+
+        # Define a function to send the request for a specific model
+        def send_to_model(model: str):
             try:
                 if model == self.config.google_model:
-                    response = self.google_ai_api_client.send_prompt(prompt=text,
-                                                                      image_url=image_url,
-                                                                      conversation_id=conversation_id)
+                    response = self.google_ai_api_client.send_prompt(
+                        prompt=text, image_url=image_url, conversation_id=conversation_id
+                    )
                 elif model == self.config.claude_model:
-                    response = self.claude_api_client.send_prompt(prompt=text,
-                                                           image_url=image_url,
-                                                           conversation_id=conversation_id)
-
+                    response = self.claude_api_client.send_prompt(
+                        prompt=text, image_url=image_url, conversation_id=conversation_id
+                    )
                 elif model in self.config.openai_models:
-                    response = self.openai_api_client.send_prompt(prompt=text,
-                                                           image_url=image_url,
-                                                           conversation_id=conversation_id,
-                                                           model=model)
+                    response = self.openai_api_client.send_prompt(
+                        prompt=text, image_url=image_url, conversation_id=conversation_id, model=model
+                    )
                 else:
                     response = f"Invalid model: {model}"
-                responses[model] = response
                 logger.info(f"Got response from model {model}: {response}")
+                return model, response
             except Exception as e:
                 traceback_str = traceback.format_exc()
                 logger.error(f"Failed to send prompt to model '{model}': {traceback_str}")
-                responses[model] = f"Failed to send prompt to model '{model}': {e}"
+                return model, f"Failed to send prompt to model '{model}': {e}"
 
+        # Use ThreadPoolExecutor to send requests concurrently
+        with ThreadPoolExecutor() as executor:
+            future_to_model = {executor.submit(send_to_model, model): model for model in models}
+            for future in as_completed(future_to_model):
+                model, response = future.result()
+                responses[model] = response
+
+        # Combine responses
         if len(models) == 1:
             return responses[models[0]]
 
-        combined_response = ""
-
-        for i in range(len(models)):
-            model = models[i]
-            if i == len(models) - 1:
-                #combined_response += f"Model: {model}\n{responses[model]}"
-                combined_response += f"Response from model '{model}':\n{responses[model]}"
-            else:
-                #combined_response += f"Model: {model}\n{responses[model]}\n\n"
-                combined_response += f"Response from model '{model}':\n{responses[model]}\n\n\n"
+        combined_response = "\n\n\n".join(
+            f"Response from model '{model}':\n{responses[model]}" for model in models
+        )
 
         return combined_response
 
