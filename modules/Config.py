@@ -28,6 +28,9 @@ class Config:
         self.google_api_key = self.config['google_api_client']['api_key']
         self.google_model = self.config['google_api_client']['model']
 
+        self.claude_api_key = self.config['claude_api_client']['api_key']
+        self.claude_model = self.config['claude_api_client']['model']
+
         self.whitelist_enabled = self.config['server']['whitelist_enabled'].lower() == 'true'
         self.whitelist = [item.strip() for item in self.config['server']['whitelist'].split(',') if self.whitelist_enabled]
 

@@ -3,3 +3,4 @@ flask==2.3.2
 tiktoken==0.7.0
 google-generativeai
 pillow
+anthropic

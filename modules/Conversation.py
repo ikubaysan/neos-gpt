@@ -1,5 +1,5 @@
 import time
-from modules.Dialogue import OpenAIDialogue, GoogleAIDialogue
+from modules.Dialogue import OpenAIDialogue, GoogleAIDialogue, ClaudeDialogue
 from typing import List
 from abc import ABC, abstractmethod
 
@@ -65,5 +65,35 @@ class GoogleAIConversation(Conversation):
             messages.append({
                 "role": "model",
                 "parts": [dialogue.response_text]
+            })
+        return messages
+
+
+class ClaudeConversation(Conversation):
+    def __init__(self, max_length: int, model: str):
+        self.max_length = max_length
+        self.update_epoch = time.time()
+        self.dialogues: List[ClaudeDialogue] = []
+        self.model = model
+
+    def add(self, prompt_contents: dict, response_text: str):
+        dialogue = ClaudeDialogue(prompt_contents, response_text)
+        if len(self.dialogues) == self.max_length:
+            self.dialogues.pop(0)
+        self.dialogues.append(dialogue)
+        self.update_epoch = time.time()
+
+    def get_messages_for_api(self):
+        messages = []
+        for dialogue in self.dialogues:
+            messages.append(dialogue.prompt_contents)
+            messages.append({
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": dialogue.response_text
+                    }
+                ]
             })
         return messages

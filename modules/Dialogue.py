@@ -27,3 +27,9 @@ class GoogleAIDialogue:
     def __init__(self, prompt_contents: dict, response_text: str):
         self.prompt_contents = prompt_contents
         self.response_text = response_text
+
+
+class ClaudeDialogue:
+    def __init__(self, prompt_contents: dict, response_text: str):
+        self.prompt_contents = prompt_contents
+        self.response_text = response_text

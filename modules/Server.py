@@ -3,16 +3,23 @@ import time
 import re
 from modules.OpenAIAPIClient import OpenAIAPIClient
 from modules.GoogleAIAPIClient import GoogleAIAPIClient
+from modules.ClaudeAPIClient import ClaudeAPIClient
 from modules.Config import Config
 from modules.helpers.logging_helper import logger
 import traceback
 from typing import List, Optional
 
 class Server:
-    def __init__(self, openai_api_client: OpenAIAPIClient, google_ai_api_client: GoogleAIAPIClient, config: Config):
+    def __init__(self, openai_api_client: OpenAIAPIClient,
+                 google_ai_api_client: GoogleAIAPIClient,
+                 claude_api_client: ClaudeAPIClient,
+                 config: Config):
+
         self.config = config
         self.openai_api_client = openai_api_client
         self.google_ai_api_client = google_ai_api_client
+        self.claude_api_client = claude_api_client
+
         self.min_seconds_between_requests_per_user = config.min_seconds_between_requests_per_user
         self.callers = {}
         self.valid_models = config.openai_models + [config.google_model]
@@ -91,11 +98,18 @@ class Server:
                     response = self.google_ai_api_client.send_prompt(prompt=text,
                                                                       image_url=image_url,
                                                                       conversation_id=conversation_id)
-                else:
+                elif model == self.config.claude_model:
+                    response = self.claude_api_client.send_prompt(prompt=text,
+                                                           image_url=image_url,
+                                                           conversation_id=conversation_id)
+
+                elif model in self.config.openai_models:
                     response = self.openai_api_client.send_prompt(prompt=text,
                                                            image_url=image_url,
                                                            conversation_id=conversation_id,
                                                            model=model)
+                else:
+                    response = f"Invalid model: {model}"
                 responses[model] = response
                 logger.info(f"Got response from model {model}: {response}")
             except Exception as e:
