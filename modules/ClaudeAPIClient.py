@@ -38,11 +38,21 @@ class ClaudeAPIClient:
             for message in previous_messages:
                 messages.append(message)
 
-        outbound_parts = [{
-            "type": "text",
-            "text": prompt
-        }]
+        if len(prompt) == 0 and not image_url:
+            return "Prompt is empty and no image was provided"
+
+        if len(prompt) > 0:
+            outbound_parts = [{
+                "type": "text",
+                "text": prompt
+            }]
+        else:
+            outbound_parts = []
+
         if image_url:
+
+            image_file_extension = image_url.split(".")[-1]
+
             outbound_parts.append(
                 {
                     "type": "image",
@@ -50,7 +60,7 @@ class ClaudeAPIClient:
                         {
 
                             "type": "base64",
-                            "media_type": "image/jpeg",
+                            "media_type": f"image/{image_file_extension}",
                             "data": get_base64_from_image_url(image_url)
                         }
                 }
