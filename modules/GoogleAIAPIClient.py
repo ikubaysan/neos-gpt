@@ -66,12 +66,14 @@ class GoogleAIAPIClient:
             for message in previous_messages:
                 messages.append(message)
 
-        outbound_parts = [prompt]
+        outbound_parts = []
         if image_url:
             image = get_image_from_url(image_url)
             if image is None:
                 return f"Failed to download image from {image_url}"
             outbound_parts.append(image)
+
+        outbound_parts.append(prompt)
 
         new_user_message = {'role': 'user',
                             'parts': outbound_parts}

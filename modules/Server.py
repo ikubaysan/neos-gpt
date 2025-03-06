@@ -80,6 +80,9 @@ class Server:
             image_url = image_url.replace("|", "/")
             logger.info(f"Image URL after replacing | with /: {image_url}")
 
+            if text == "":
+                text = "Describe the image in detail"
+
         response = self.send_prompt(models=models,
                          text=text,
                          image_url=image_url,
