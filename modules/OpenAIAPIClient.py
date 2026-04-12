@@ -56,7 +56,7 @@ class OpenAIAPIClient:
         body = {
             "model": model,
             "messages": messages,
-            "max_tokens": self.max_response_tokens,
+            "max_completion_tokens": self.max_response_tokens,
             "temperature": self.temperature
         }
 
